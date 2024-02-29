@@ -28,14 +28,7 @@ class GATv2Convolution(tf.keras.layers.Layer):
   def from_config(cls, config):
     return cls(**config)
 
-class UpdateHidden(tf.keras.layers.Layer):
-  def __init__(self, ):
-    super(UpdateHidden, self).__init__()
-  def call(self, inputs):
-    node_features, incident_node_features, context_features = inputs
-    return incident_node_features
-
-def GATv2(channel = 256, ):
+def GATv2(channel = 256, drop_rate = 0.1):
   inputs = tf.keras.Input(type_spec = graph_tensor_spec())
   results = inputs.merge_batch_to_components()
   results = tfgnn.keras.layers.MapFeatures(
@@ -47,7 +40,12 @@ def GATv2(channel = 256, ):
         edge_set_inputs = {
           "bond": GATv2Convolution(channel)
         },
-        next_state = UpdateHidden()
+        next_state = tfgnn.keras.layers.NextStateFromConcat(
+          transformation = tf.keras.Sequential([
+            tf.keras.layers.Dense(channel, activation = tf.keras.activations.gelu, kernel_regularizer = tf.keras.regularizers.l2(5e-4), bias_regularizer = tf.keras.regularizers.l2(5e-4)),
+            tf.keras.layers.Dropout(drop_rate)
+          ])
+        )
       )
     }
   )(results)
