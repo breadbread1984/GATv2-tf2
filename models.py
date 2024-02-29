@@ -17,8 +17,10 @@ class GATv2Convolution(tf.keras.layers.Layer):
     hj = tfgnn.broadcast_node_to_edges(graph, edge_set_name, tfgnn.TARGET, feature_value = h) # hj.shape = (edge_num, channel)
     hij = tf.concat([hi,hj], axis = -1) # hij.shape = (edge_num, channel * 2)
     e = tf.linalg.matmul(tf.raw_ops.LeakyRelu(tf.linalg.matmul(hij, self.w)), self.a) # e.shape = (edge_num, 1)
-    hi = hi * e
+    hi = hi * tf.math.exp(e)
     h = tfgnn.pool_edges_to_node(graph, edge_set_name, tfgnn.TARGET, reduce_type = 'sum', feature_value = hi) # h.shape = (node_num, channel)
+    denominator = tfgnn.pool_edges_to_node(graph, edge_set_name, tfgnn.TARGET, reduce_type = 'sum', feature_value = tf.math.exp(e)) # denominator.shape = (node_num, channel)
+    h = h / denominator
     return h
   def get_config(self):
     config = super(GATv2Convolution, self).get_config()
