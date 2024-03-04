@@ -6,22 +6,30 @@ import torch
 import torch.nn.functional as F
 
 class GATv2(nn.Module):
-  def __init__(self, channel, layer_num):
+  def __init__(self, channel, head, layer_num):
     super(GATv2,self).__init__()
     self.channel = channel
+    self.head = head
     self.layer_num = layer_num
 
-    self.node_map = nn.Linear(118, self.channel)
-    self.edge_map = nn.Linear(22, self.channel)
+    self.node_map = nn.Linear(118, self.channel * self.head)
+    self.edge_map = nn.Linear(22, self.channel * self.head)
     self.attn_map = nn.Sequential(
-      nn.Linear(2 * self.channel, self.channel),
+      nn.Linear(2 * self.channel, self.channel * self.head),
       nn.LeakyReLU(),
-      nn.Linear(self.channel, 1)
+      nn.Linear(self.channel * self.head, 1)
     )
+    self.attn_weight = nn.Parameter(torch.FloatTensor(size = (1, self.head, self.channel)))
   def forward(self, graph):
     graph.apply_nodes(lambda nodes: {'hidden': self.node_map(nodes.data['hidden'])})
     graph.apply_edges(lambda edges: {'hidden': self.edge_map(edges.data['hidden'])})
     for i in range(layer_num):
+      graph.apply_nodes(lambda nodes: {'hidden': torch.reshape(nodes.data['hidden'], (-1, self.head, self.channel))})
       graph.apply_edges(lambda edges: {'e': torch.cat([edges.src['hidden'], edges.dst['hidden']], dim = -1)}) # e.shape = (edge_num, 2*channel)
-      graph.apply_edges(lambda edges: {'e': self.attn_map(edges.data['e'])}) # e.shape = (edge_num, channel)
-      
+      graph.apply_edges(lambda edges: {'e': self.attn_map(edges.data['e'])}) # e.shape = (edge_num, head * channel)
+      graph.apply_edges(lambda edges: {'e': torch.reshape(edges.data['e'], (-1, self.head, self.channel))}) # e.shape = (edge_num, head, channel)
+      # NOTE: e is temperally needed, therefore pop it
+      graph.apply_edges(lambda edges: {'e': torch.sum(edges.data['e'] * self.attn_weight, dim = -1, keepdim = True)}) # e.shape = (edge_num, head, 1)
+      graph.apply_edges(lambda edges: {'e': fn.edge_softmax(graph.edges['bond'], edges.data['e'], norm_by = 'dst')}) # e.shape = (edge_num, head, 1)
+      graph.update_all(fn.u_mul_e("hidden", "e", "m"), fn.sum("m", "hidden")) # hidden.shape = (node_num, head, channel)
+    graph.apply_nodes(lambda nodes: {'hidden': torch.reshape(nodes.data['hidden'], (-1, self.head, self.channel))}) # hidden.shape = (node_num, head * channel)
