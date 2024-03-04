@@ -7,7 +7,7 @@ from torch import nn
 import torch.nn.functional as F
 
 class GATv2(nn.Module):
-  def __init__(self, channel, head, layer_num):
+  def __init__(self, channel = 64, head = 8, layer_num = 2):
     super(GATv2,self).__init__()
     self.channel = channel
     self.head = head
@@ -24,7 +24,7 @@ class GATv2(nn.Module):
   def forward(self, graph):
     graph.apply_nodes(lambda nodes: {'hidden': self.node_map(nodes.data['hidden'])})
     graph.apply_edges(lambda edges: {'hidden': self.edge_map(edges.data['hidden'])})
-    for i in range(layer_num):
+    for i in range(self.layer_num):
       graph.apply_nodes(lambda nodes: {'hidden': torch.reshape(nodes.data['hidden'], (-1, self.head, self.channel))})
       graph.apply_edges(lambda edges: {'e': torch.cat([edges.src['hidden'], edges.dst['hidden']], dim = -1)}) # e.shape = (edge_num, 2*channel)
       graph.apply_edges(lambda edges: {'e': self.attn_map(edges.data['e'])}) # e.shape = (edge_num, head * channel)
@@ -39,6 +39,6 @@ class GATv2(nn.Module):
 if __name__ == "__main__":
   from create_datasets_torch import smiles_to_sample
   graph = smiles_to_sample('CCC(C#N)CC(C#N)CC(C#N)CC(C#N)CC')
-  gatv2 = GATv2(channel = 256, head = 8, layer_num = 2)
+  gatv2 = GATv2()
   results = gatv2(graph)
   print(results.shape)
