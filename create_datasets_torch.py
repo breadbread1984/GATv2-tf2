@@ -36,8 +36,8 @@ def smiles_to_sample(smiles):
   graph = dgl.heterograph({
     ("atom", "bond", "atom"): (torch.from_numpy(edges[:,0]), torch.from_numpy(edges[:,1])),
   })
-  graph.nodes['atom'].data['hidden'] = F.one_hot(torch.from_numpy(nodes), 118)
-  graph.edges['bond'].data['hidden'] = F.one_hot(torch.from_numpy(edges[:,2]), 22)
+  graph.nodes['atom'].data['hidden'] = F.one_hot(torch.from_numpy(nodes), 118).to(torch.float32)
+  graph.edges['bond'].data['hidden'] = F.one_hot(torch.from_numpy(edges[:,2]), 22).to(torch.float32)
   return graph
 
 
