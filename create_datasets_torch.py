@@ -38,3 +38,6 @@ def smiles_to_sample(smiles, label):
   })
   graph.nodes['atom'].data['hidden'] = F.one_hot(torch.from_numpy(nodes), 118)
   graph.edges['bond'].data['hidden'] = F.one_hot(torch.from_numpy(edges[:,2]), 22)
+  return graph
+
+
