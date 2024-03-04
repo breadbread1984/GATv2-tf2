@@ -3,6 +3,7 @@
 import dgl
 import dgl.function as fn
 import torch
+from torch import nn
 import torch.nn.functional as F
 
 class GATv2(nn.Module):
@@ -33,3 +34,11 @@ class GATv2(nn.Module):
       graph.apply_edges(lambda edges: {'e': fn.edge_softmax(graph.edges['bond'], edges.data['e'], norm_by = 'dst')}) # e.shape = (edge_num, head, 1)
       graph.update_all(fn.u_mul_e("hidden", "e", "m"), fn.sum("m", "hidden")) # hidden.shape = (node_num, head, channel)
     graph.apply_nodes(lambda nodes: {'hidden': torch.reshape(nodes.data['hidden'], (-1, self.head, self.channel))}) # hidden.shape = (node_num, head * channel)
+    return graph.nodes['atom'].data['hidden']
+
+if __name__ == "__main__":
+  from create_datasets_torch import smiles_to_sample
+  graph = smiles_to_sample('CCC(C#N)CC(C#N)CC(C#N)CC(C#N)CC')
+  gatv2 = GATv2(channel = 256, head = 8, layer_num = 2)
+  results = gatv2(graph)
+  print(results.shape)

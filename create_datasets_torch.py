@@ -16,7 +16,7 @@ def add_options():
   flags.DEFINE_string('input_csv', default = None, help = 'path to polymer dataset csv')
   flags.DEFINE_string('output_dir', default = 'dataset', help = 'path to output directory')
 
-def smiles_to_sample(smiles, label):
+def smiles_to_sample(smiles):
   molecule = Chem.MolFromSmiles(smiles)
   indices = list()
   nodes = list()
@@ -29,10 +29,10 @@ def smiles_to_sample(smiles, label):
       neighbor_idx = neighbor_atom.GetIdx()
       bond = molecule.GetBondBetweenAtoms(idx, neighbor_idx)
       edges.append((idx, neighbor_idx, bond.GetBondType()))
-  sidx = tf.argsort(indices)
-  nodes = tf.stack(nodes, axis = 0) # nodes.shape = (node_num,)
-  nodes = tf.gather(nodes, sidx)
-  edges = tf.stack(edges, axis = 0) # edges.shape = (edge_num, 3)
+  sidx = np.argsort(indices)
+  nodes = np.stack(nodes, axis = 0) # nodes.shape = (node_num,)
+  nodes = nodes[sidx]
+  edges = np.stack(edges, axis = 0) # edges.shape = (edge_num, 3)
   graph = dgl.heterograph({
     ("atom", "bond", "atom"): (torch.from_numpy(edges[:,0]), torch.from_numpy(edges[:,1])),
   })
