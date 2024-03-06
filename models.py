@@ -74,7 +74,7 @@ def GATv2(channel = 8, head = 8, layer_num = 4, drop_rate = 0.3):
               drop_rate = drop_rate)
           },
           next_state = UpdateHidden(
-              in_channel = channel * headm
+              in_channel = channel * head,
               out_chnanel = channel,
               head = head if i != layer_num - 1 else 1)
         )
