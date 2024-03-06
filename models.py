@@ -43,12 +43,18 @@ class GATv2Convolution(tf.keras.layers.Layer):
     return cls(**config)
 
 class UpdateHidden(tf.keras.layers.Layer):
-  def __init__(self,):
+  def __init__(self, **kwargs):
     super(UpdateHidden, self).__init__()
+    self.in_channel = kwargs.get('in_channel', 64)
+    self.out_channel = kwargs.get('out_channel', 8)
+    self.head = kwargs.get('head', 8)
+
+    if self.in_channel != self.head * self.out_channel:
+      self.w = self.add_weight(name = 'w', shape = (self.in_channel, self.head * self.out_channel), initializer = tf.keras.initializers.GlorotUniform(), trainable = True)
   def call(self, inputs):
     node_features, incident_node_features, context_features = inputs
     # NOTE: this is residual structure
-    return tf.keras.layers.ELU()(node_features + incident_node_features['bond'])
+    return tf.keras.layers.ELU()(tf.linalg.matmul(node_features, w) + incident_node_features['bond'])
 
 def GATv2(channel = 8, head = 8, layer_num = 4, drop_rate = 0.3):
   inputs = tf.keras.Input(type_spec = graph_tensor_spec())
@@ -67,7 +73,10 @@ def GATv2(channel = 8, head = 8, layer_num = 4, drop_rate = 0.3):
               head = head if i != layer_num - 1 else 1,
               drop_rate = drop_rate)
           },
-          next_state = UpdateHidden()
+          next_state = UpdateHidden(
+              in_channel = channel * headm
+              out_chnanel = channel,
+              head = head if i != layer_num - 1 else 1)
         )
       }
     )(results)
