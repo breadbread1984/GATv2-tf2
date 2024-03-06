@@ -18,7 +18,7 @@ class GATv2Convolution(tf.keras.layers.Layer):
     hi = tfgnn.broadcast_node_to_edges(graph, edge_set_name, tfgnn.SOURCE, feature_value = h) # hi.shape = (edge_num, head * channel)
     hj = tfgnn.broadcast_node_to_edges(graph, edge_set_name, tfgnn.TARGET, feature_value = h) # hj.shape = (edge_num, head * channel)
     hij = tf.concat([hi,hj], axis = -1) # hij.shape = (edge_num, head * channel * 2)
-    e = tf.keras.layers.LeakyReLU(tf.linalg.matmul(hij, self.w)) # e.shape = (edge_num, head * channel)
+    e = tf.keras.layers.LeakyReLU()(tf.linalg.matmul(hij, self.w)) # e.shape = (edge_num, head * channel)
     e = tf.nn.dropout(e, rate = self.drop_rate) # e.shape = (edge_num, head * channel)
     e = e * self.a # e.shape = (edge_num, head * channel)
     e = tf.nn.dropout(e, rate = self.drop_rate) # e.shape = (edge_num, head * channel)
