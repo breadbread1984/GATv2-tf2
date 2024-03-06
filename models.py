@@ -46,7 +46,7 @@ class UpdateHidden(tf.keras.layers.Layer):
   def call(self, inputs):
     node_features, incident_node_features, context_features = inputs
     # NOTE: this is residual structure
-    return tf.keras.layers.ELU()(node_features + incident_node_features)
+    return tf.keras.layers.ELU()(node_features + incident_node_features['bond'])
 
 def GATv2(channel = 8, head = 8, layer_num = 4, drop_rate = 0.3):
   inputs = tf.keras.Input(type_spec = graph_tensor_spec())
