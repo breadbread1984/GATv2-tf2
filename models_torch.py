@@ -30,7 +30,7 @@ class GATv2(nn.Module):
       graph.apply_edges(lambda edges: {'e': torch.reshape(edges.data['e'], (-1, self.head, self.channel))}) # e.shape = (edge_num, head, channel)
       # NOTE: e is temperally needed, therefore pop it
       graph.apply_edges(lambda edges: {'e': torch.sum(edges.data['e'] * self.attn_weight, dim = -1, keepdim = True)}) # e.shape = (edge_num, head, 1)
-      graph.apply_edges(lambda edges: {'e': DF.edge_softmax(graph, {('atom','bond','atom'): edges.data['e']}, norm_by = 'dst')}) # e.shape = (edge_num, head, 1)
+      graph.apply_edges(lambda edges: {'e': DF.edge_softmax(graph, {('atom','bond','atom'): edges.data['e']}, norm_by = 'dst')[("atom","bond","atom")]}) # e.shape = (edge_num, head, 1)
       graph.update_all(fn.u_mul_e("hidden", "e", "m"), fn.sum("m", "hidden")) # hidden.shape = (node_num, head, channel)
       graph.apply_nodes(lambda nodes: {'hidden': torch.reshape(nodes.data['hidden'], (-1, self.head * self.channel))}) # hidden.shape = (node_num, head * channel)
     return graph.nodes['atom'].data['hidden']
