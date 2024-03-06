@@ -1,8 +1,8 @@
-#/usr/bin/python3
+#!/usr/bin/python3
 
 from absl import flags, app
 from shutil import rmtree
-from os import mkdir
+from os import mkdir, remove
 from os.path import join, exists
 from rdkit import Chem
 import numpy as np
@@ -12,8 +12,8 @@ import tensorflow_gnn as tfgnn
 FLAGS = flags.FLAGS
 
 def add_options():
-  flags.DEFINE_string('input_csv', default = None, help = 'path to polymer dataset csv')
-  flags.DEFINE_string('output_dir', default = 'dataset', help = 'path to output directory')
+  flags.DEFINE_string('input_dir', default = None, help = 'path to polymer dataset csv')
+  flags.DEFINE_string('output_dir', default = 'dataset', help = 'path to output tfrecord')
 
 def smiles_to_sample(smiles, label):
   molecule = Chem.MolFromSmiles(smiles)
@@ -55,7 +55,7 @@ def smiles_to_sample(smiles, label):
     },
     context = tfgnn.Context.from_fields(
       features = {
-        "label": tf.constant([label,], dtype = tf.float32)
+        "label": tf.constant([label,], dtype = tf.int32)
       }
     )
   )
@@ -82,7 +82,7 @@ def graph_tensor_spec():
       },
       context_spec = tfgnn.ContextSpec.from_field_specs(
         features_spec = {
-          'label': tf.TensorSpec(shape = (1,), dtype = tf.float32)
+          'label': tf.TensorSpec(shape = (1,), dtype = tf.int32)
         }
       )
   )
@@ -96,12 +96,12 @@ def parse_function(serialized_example):
   context_features = graph.context.get_features_dict()
   label = context_features.pop('label')
   graph = graph.replace_features(context = context_features)
-  return graph, label
+  return graph, tf.cast(label, dtype = tf.float32)
 
 def generate_dataset(samples, tfrecord_file):
   writer = tf.io.TFRecordWriter(tfrecord_file)
   for line, (smiles, label) in enumerate(samples):
-    graph = smiles_to_sample(smiles, float(label))
+    graph = smiles_to_sample(smiles, label)
     example = tfgnn.write_example(graph)
     writer.write(example.SerializeToString())
   writer.close()
@@ -110,18 +110,21 @@ def main(unused_argv):
   if exists(FLAGS.output_dir): rmtree(FLAGS.output_dir)
   mkdir(FLAGS.output_dir)
   samples = list()
-  with open(FLAGS.input_csv, 'r') as f:
+  with open(join(FLAGS.input_dir, 'mol_train.csv'), 'r') as f:
     for line, row in enumerate(f.readlines()):
       if line == 0: continue
       smiles, label = row.split(',')
-      samples.append((smiles, label))
-  is_train = np.random.multinomial(1, (9/10,1/10), size = len(samples))[:,0].astype(np.bool_)
-  samples = np.array(samples)
-  trainset = samples[is_train].tolist()
-  valset = samples[np.logical_not(is_train)].tolist()
-  generate_dataset(trainset, join(FLAGS.output_dir, 'trainset.tfrecord'))
-  generate_dataset(valset, join(FLAGS.output_dir, 'testset.tfrecord'))
+      samples.append((smiles, int(label)))
+  generate_dataset(samples, join(FLAGS.output_dir, 'trainset.tfrecord'))
+  samples = list()
+  with open(join(FLAGS.input_dir, 'mol_test.csv'), 'r') as f:
+    for line, row in enumerate(f.readlines()):
+      if line == 0: continue
+      smiles, label = row.split(',')
+      samples.append((smiles, int(label)))
+  generate_dataset(samples, join(FLAGS.output_dir, 'testset.tfrecord'))
 
 if __name__ == "__main__":
   add_options()
   app.run(main)
+
