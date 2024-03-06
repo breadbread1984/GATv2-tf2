@@ -96,7 +96,7 @@ def parse_function(serialized_example):
   context_features = graph.context.get_features_dict()
   label = context_features.pop('label')
   graph = graph.replace_features(context = context_features)
-  return graph, tf.cast(label, dtype = tf.float32)
+  return graph, tf.cast(label, dtype = tf.int32)
 
 def generate_dataset(samples, tfrecord_file):
   writer = tf.io.TFRecordWriter(tfrecord_file)

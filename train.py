@@ -22,14 +22,14 @@ def main(unused_argv):
   trainset = tf.data.TFRecordDataset(join(FLAGS.dataset, 'trainset.tfrecord')).map(parse_function).prefetch(FLAGS.batch).shuffle(FLAGS.batch).batch(FLAGS.batch)
   valset = tf.data.TFRecordDataset(join(FLAGS.dataset, 'testset.tfrecord')).map(parse_function).prefetch(FLAGS.batch).shuffle(FLAGS.batch).batch(FLAGS.batch)
   model = GATv2()
-  loss = [tf.keras.losses.MeanAbsoluteError()]
-  metrics = [tf.keras.metrics.MeanAbsoluteError()]
+  loss = [tf.keras.losses.BinaryCrossentropy()]
+  metrics = [tf.keras.metrics.BinaryAccuracy()]
   optimizer = tf.keras.optimizers.Adam(tf.keras.optimizers.schedules.CosineDecayRestarts(FLAGS.lr, first_decay_steps = FLAGS.decay_steps))
   model.compile(optimizer = optimizer, loss = loss, metrics = metrics)
   if exists(FLAGS.ckpt): model.load_weights(join(FLAGS.ckpt, 'ckpt', 'variables', 'variables'))
   callbacks = [
     tf.keras.callbacks.TensorBoard(log_dir = FLAGS.ckpt),
-    tf.keras.callbacks.ModelCheckpoint(filepath = join(FLAGS.ckpt, 'ckpt'), save_freq = FLAGS.save_freq, save_best_only = True, mode = "min")]
+    tf.keras.callbacks.ModelCheckpoint(filepath = join(FLAGS.ckpt, 'ckpt'), save_freq = FLAGS.save_freq, save_best_only = True)]
   model.fit(trainset, epochs = FLAGS.epochs, validation_data = valset, callbacks = callbacks)
 
 if __name__ == "__main__":
