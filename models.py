@@ -52,8 +52,8 @@ def GATv2(channel = 8, head = 8, layer_num = 4, drop_rate = 0.3):
   inputs = tf.keras.Input(type_spec = graph_tensor_spec())
   results = inputs.merge_batch_to_components()
   results = tfgnn.keras.layers.MapFeatures(
-    node_sets_fn = lambda node_set, *, node_set_name: tf.keras.layers.Dense(channel)(node_set[tfgnn.HIDDEN_STATE]),
-    edge_sets_fn = lambda edge_set, *, edge_set_name: tf.keras.layers.Dense(channel)(edge_set[tfgnn.HIDDEN_STATE]))(results)
+    node_sets_fn = lambda node_set, *, node_set_name: tf.keras.layers.Dense(head * channel)(node_set[tfgnn.HIDDEN_STATE]),
+    edge_sets_fn = lambda edge_set, *, edge_set_name: tf.keras.layers.Dense(head * channel)(edge_set[tfgnn.HIDDEN_STATE]))(results)
   for i in range(layer_num):
     results = tfgnn.keras.layers.GraphUpdate(
       node_sets = {
