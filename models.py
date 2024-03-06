@@ -86,6 +86,6 @@ def GATv2(channel = 8, head = 8, layer_num = 4, drop_rate = 0.3):
       }
     )(results)
   results = tfgnn.keras.layers.Pool(tag = tfgnn.CONTEXT, reduce_type = "mean", node_set_name = "atom")(results)
-  results = tfgnn.keras.layers.Dense(1, activation = tf.keras.activations.sigmoid)(results)
+  results = tf.keras.layers.Dense(1, activation = tf.keras.activations.sigmoid)(results)
   return tf.keras.Model(inputs = inputs, outputs = results)
 
