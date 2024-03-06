@@ -62,8 +62,8 @@ def GATv2(channel = 8, head = 8, layer_num = 4, drop_rate = 0.3):
         "atom": tfgnn.keras.layers.NodeSetUpdate(
           edge_set_inputs = {
             "bond": GATv2Convolution(
-              in_channel = out_channel * head if i != layer_num - 1 else out_channel,
-              out_channel = out_channel,
+              in_channel = channel * head if i != layer_num - 1 else out_channel,
+              out_channel = channel,
               head = head if i != layer_num - 1 else 1,
               drop_rate = drop_rate)
           },
