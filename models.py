@@ -28,7 +28,7 @@ class GATv2Convolution(tf.keras.layers.Layer):
     attention = tfgnn.softmax(graph, per_tag = tfgnn.TARGET, edge_set_name = edge_set_name, feature_value = e) # e.shape = (edge_num, head, 1)
     hi = tf.reshape(hi, (-1, self.head, self.out_channel)) # hi.shape = (edge_num, head, channel)
     print(hi.shape, attention.shape)
-    if self.in_channel != self.head * self.out_channel
+    if self.in_channel != self.head * self.out_channel:
       hi = hi * tf.tile(attention, (1,tf.shape(hi)[1],1))
     else:
       hi = hi * attention
