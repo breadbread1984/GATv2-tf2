@@ -23,7 +23,7 @@ class GATv2Convolution(tf.keras.layers.Layer):
     hj = tf.linalg.matmul(hj, self.w2) # hj.shape = (edge_num, head * out_channel)
     e = tf.keras.layers.LeakyReLU()(hi + hj) # e.shape = (edge_num, head * out_channel)
     e = tf.nn.dropout(e, rate = self.drop_rate) # e.shape = (edge_num, head * out_channel)
-    e = e * self.a # e.shape = (edge_num, head * channel)
+    e = e * self.a # e.shape = (edge_num, head * out_channel)
     e = tf.nn.dropout(e, rate = self.drop_rate) # e.shape = (edge_num, head * out_channel)
     e = tf.reshape(e, (-1, self.head, self.out_channel)) # e.shape = (edge_num, head, out_channel)
     e = tf.math.reduce_sum(e, axis = -1, keepdims = True) # e.shape = (edge_num, head, 1)
